@@ -1,0 +1,23 @@
+设备	代号	组合键
+Pixel XL	marlin	按住音量调低键，然后按住电源键。
+Pixel	sailfish	按住音量调低键，然后按住电源键。
+hikey	hikey	连接 J15 的引脚 1-2 和 5-6。
+Nexus 6P	angler	按住音量调低键，然后按住电源键。
+Nexus 5X	bullhead	按住音量调低键，然后按住电源键。
+Nexus 6	shamu	按住音量调低键，然后按住电源键。
+Nexus Player	fugu	按住电源键。
+Nexus 9	volantis	按住音量调低键，然后按住电源键。
+Nexus 5	hammerhead	同时按住音量调高键和音量调低键，然后按住电源键。
+Nexus 7	flo	按住音量调低键，然后按住电源键。
+Nexus 7 3G	deb	按住音量调低键，然后按住电源键。
+Nexus 10	manta	同时按住音量调高键和音量调低键，然后按住电源键。
+Nexus 4	mako	按住音量调低键，然后按住电源键。
+Nexus 7 (2012)	grouper	按住音量调低键，然后按住电源键。
+Nexus 7 3G (2012)	tilapia	按住音量调低键，然后按住电源键。
+Nexus Q	phantasm	启动设备，然后在 LED 指示灯亮起后用一只手盖住设备，直至指示灯变成红色。
+Galaxy Nexus GSM	maguro	同时按住音量调高键和音量调低键，然后按住电源键。
+Galaxy Nexus (Verizon)	toro	同时按住音量调高键和音量调低键，然后按住电源键。
+Galaxy Nexus (Sprint)	toroplus	同时按住音量调高键和音量调低键，然后按住电源键。
+Motorola Xoom	wingray	按住音量调低键，然后按住电源键。
+Nexus S	crespo	按住音量调高键，然后按住电源键。
+Nexus SG	crespo4g	按住音量调高键，然后按住电源键。
