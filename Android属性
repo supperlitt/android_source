@@ -1,0 +1,158 @@
+<div class="devsite-article-body clearfix
+      ">
+
+              
+
+<!--
+  Copyright 2020 The Android Open Source Project
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<p>Android 10 包含 Android Live-LocK 守护程序 (<code translate="no" dir="ltr">llkd</code>)，该守护程序旨在发现和减少内核死锁问题。<code translate="no" dir="ltr">llkd</code> 组件提供默认的独立实现，但您也可以选择将 <code translate="no" dir="ltr">llkd</code> 代码集成到其他服务中（作为主循环的一部分或作为单独的线程）。</p>
+
+<h2 id="detection-scenarios" data-text="检测场景" tabindex="0">检测场景</h2>
+
+<p><code translate="no" dir="ltr">llkd</code> 有两种检测场景：一种是持久 D 状态或 Z 状态，另一种是持久堆栈签名。</p>
+
+<h3 id="persistent-d-or-z-state" data-text="持久 D 状态或 Z 状态" tabindex="0">持久 D 状态或 Z 状态</h3>
+
+<p>如果某个线程一直处于 D（不间断休眠）状态或 Z（僵死）状态且超过 <code translate="no" dir="ltr">ro.llk.timeout_ms or ro.llk.[D|Z].timeout_ms</code> 没有任何进展，<code translate="no" dir="ltr">llkd</code> 就会终止该进程（或父进程）。如果后续扫描显示同一进程仍然存在，<code translate="no" dir="ltr">llkd</code> 会确认活锁情况，并通过提供有关该情况的最详细错误报告向内核发出紧急警报。</p>
+
+<p><code translate="no" dir="ltr">llkd</code> 包含一个自监控定时器，会在 <code translate="no" dir="ltr">llkd</code> 锁定时发出警报；监控定时器的时间是主循环预计循环时间的两倍，采样频率为 <code translate="no" dir="ltr">ro.llk_sample_ms</code> 一次。</p>
+
+<h3 id="persistent-stack-signature" data-text="持久堆栈签名" tabindex="0">持久堆栈签名</h3>
+
+<p>对于 userdebug 版本，<code translate="no" dir="ltr">llkd</code> 可以使用持久堆栈签名检查来检测内核活锁。如果处于 Z 状态以外任意状态的线程持久列出 <code translate="no" dir="ltr">ro.llk.stack</code> 内核符号，且这种情况的持续时间超过 <code translate="no" dir="ltr">ro.llk.timeout_ms</code> 或 <code translate="no" dir="ltr">ro.llk.stack.timeout_ms</code>，<code translate="no" dir="ltr">llkd</code> 就会终止该进程（即使向前调度作业仍在继续也会终止该进程）。如果后续扫描显示同一进程仍然存在，<code translate="no" dir="ltr">llkd</code> 会确认活锁情况，并通过提供有关该情况的最详细错误报告向内核发出紧急警报。</p>
+<aside class="note"><strong>注意</strong><span>：由于系统允许向前调度作业继续执行，因此 <code translate="no" dir="ltr">llkd</code> 不会执行 <a href="https://en.wikipedia.org/wiki/ABA_problem" class="external">ABA 检测</a>。</span></aside><p><code translate="no" dir="ltr">lldk</code> 检查会在活锁情况存在期间持续进行，并在 Linux 上的 <code translate="no" dir="ltr">/proc/pid/stack</code> 文件中查找组合字符串 <code translate="no" dir="ltr">" symbol+0x"</code> 或 <code translate="no" dir="ltr">" symbol.cfi+0x"</code>。符号列表存储在 <code translate="no" dir="ltr">ro.llk.stack</code> 中，并默认为逗号分隔列表“<code translate="no" dir="ltr">cma_alloc,__get_user_pages,bit_wait_io,wait_on_page_bit_killable</code>”。</p>
+
+<p>符号的出现频率应极低且存在时间应足够短，在典型的系统上，于 <code translate="no" dir="ltr">ro.llk.stack.timeout_ms</code> 的超时期限内符号函数只能在样本中出现一次（采样频率为 <code translate="no" dir="ltr">ro.llk.check_ms</code> 一次）。由于缺少 ABA 保护，因此这是防止误触发的唯一办法。符号函数必须出现在调用会发生争用的锁的函数之后。如果锁位于符号函数之后或之中，则符号会出现在所有受影响的进程中，而不仅仅出现在导致锁定的进程中。</p>
+
+<h2 id="coverage" data-text="监控范围" tabindex="0">监控范围</h2>
+
+<p><code translate="no" dir="ltr">llkd</code> 的默认实现不监控 <code translate="no" dir="ltr">init</code>、<code translate="no" dir="ltr">[kthreadd]</code> 或 <code translate="no" dir="ltr">[kthreadd]</code> 衍生线程。为了让 <code translate="no" dir="ltr">llkd</code> 监控 <code translate="no" dir="ltr">[kthreadd]</code> 衍生的线程，需要满足以下条件：</p>
+
+<ul>
+<li>驱动程序不得持久处于 D 状态，</li>
+</ul>
+
+<p>或</p>
+
+<ul>
+<li>驱动程序必须具有线程恢复机制（倘若线程是在外部终止的）。例如，使用 <code translate="no" dir="ltr">wait_event_interruptible()</code> 而不是 <code translate="no" dir="ltr">wait_event()</code>。</li>
+</ul>
+
+<p>如果满足上述其中一个条件，系统就可以调整 <code translate="no" dir="ltr">llkd</code> 黑名单，将内核组件纳入监控范围内。堆栈符号检查包括一个额外的进程黑名单，用于防止发生与阻止 <code translate="no" dir="ltr">ptrace</code> 操作的服务相关的 sepolicy 违规情况。</p>
+
+<h2 id="android-properties" data-text="Android 属性" tabindex="0">Android 属性</h2>
+
+<p><code translate="no" dir="ltr">llkd</code> 会响应多个 Android 属性（如下所示）。</p>
+
+<ul>
+<li>名为 <code translate="no" dir="ltr">prop_ms</code> 的属性以毫秒为单位。</li>
+<li>对列表使用逗号 (,) 分隔符的属性使用前导分隔符来保留默认条目，然后分别使用可选的加号 (+) 和减号 (-) 前缀来加减条目。对于这些列表，字符串“false”与空列表同义，而空条目或缺失条目则使用指定默认值。</li>
+</ul>
+
+<h3 id="ro-config-low-ram" data-text="ro.config.low_ram" tabindex="0">ro.config.low_ram</h3>
+
+<p>设备配置的内存有限。</p>
+
+<h3 id="ro-debuggable" data-text="ro.debuggable" tabindex="0">ro.debuggable</h3>
+
+<p>设备已针对 userdebug 或 eng build 进行配置。</p>
+
+<h3 id="ro-llk-sysrq-t" data-text="ro.llk.sysrq_t" tabindex="0">ro.llk.sysrq_t</h3>
+
+<p>如果属性为“eng”，则默认值不是 <code translate="no" dir="ltr">ro.config.low_ram</code> 或 <code translate="no" dir="ltr">ro.debuggable</code>。如果值为 true，则转储所有线程 (<code translate="no" dir="ltr">sysrq t</code>)。</p>
+
+<h3 id="ro-llk-enable" data-text="ro.llk.enable" tabindex="0">ro.llk.enable</h3>
+
+<p>允许启用 Live-Lock 守护程序。默认值为 false。</p>
+
+<h3 id="llk-enable" data-text="llk.enable" tabindex="0">llk.enable</h3>
+
+<p>已针对 eng build 进行评估。默认值为 <code translate="no" dir="ltr">ro.llk.enable</code>。</p>
+
+<h3 id="ro-khungtask-enable" data-text="ro.khungtask.enable" tabindex="0">ro.khungtask.enable</h3>
+
+<p>允许启用 <code translate="no" dir="ltr">[khungtask]</code> 守护程序。默认值为 false。</p>
+
+<h3 id="khungtask-enable" data-text="khungtask.enable" tabindex="0">khungtask.enable</h3>
+
+<p>已针对 eng build 进行评估。默认值为 <code translate="no" dir="ltr">ro.khungtask.enable</code>。</p>
+
+<h3 id="ro-llk-mlockall" data-text="ro.llk.mlockall" tabindex="0">ro.llk.mlockall</h3>
+
+<p>允许调用 <code translate="no" dir="ltr">mlockall()</code>。默认值为 false。</p>
+
+<h3 id="ro-khungtask-timeout" data-text="ro.khungtask.timeout" tabindex="0">ro.khungtask.timeout</h3>
+
+<p><code translate="no" dir="ltr">[khungtask]</code> 的最长时间限制。默认值为 12 分钟。</p>
+
+<h3 id="ro-llk-timeout-ms" data-text="ro.llk.timeout_ms" tabindex="0">ro.llk.timeout_ms</h3>
+
+<p>处于 D 状态或 Z 状态的最长时间限制。默认值为 10 分钟。将此值翻倍可为 <code translate="no" dir="ltr">llkd</code> 设置警报监控定时器。</p>
+
+<h3 id="ro-llk-D-timeout-ms" data-text="ro.llk.D.timeout_ms" tabindex="0">ro.llk.D.timeout_ms</h3>
+
+<p>处于 D 状态的最长时间限制。默认值为 <code translate="no" dir="ltr">ro.llk.timeout_ms</code>。</p>
+
+<h3 id="ro-llk-Z-timeout-ms" data-text="ro.llk.Z.timeout_ms" tabindex="0">ro.llk.Z.timeout_ms</h3>
+
+<p>处于 Z 状态的最长时间限制。默认值为 <code translate="no" dir="ltr">ro.llk.timeout_ms</code>。</p>
+
+<h3 id="ro-llk-stack-timeout-ms" data-text="ro.llk.stack.timeout_ms" tabindex="0">ro.llk.stack.timeout_ms</h3>
+
+<p>检查持久堆栈符号的最长时间限制。默认值为 <code translate="no" dir="ltr">ro.llk.timeout_ms</code>。<strong>仅在 userdebug 或 eng build 中有效</strong>。</p>
+
+<h3 id="ro-llk-check-ms" data-text="ro.llk.check_ms" tabindex="0">ro.llk.check_ms</h3>
+
+<p>D 状态或 Z 状态线程采样间隔时间。默认值为 2 分钟。</p>
+
+<h3 id="ro-llk-stack" data-text="ro.llk.stack" tabindex="0">ro.llk.stack</h3>
+
+<p>检查内核堆栈符号，这些符号如果持久存在，则表明子系统被锁定。默认值为 <code translate="no" dir="ltr">cma_alloc,__get_user_pages,bit_wait_io,wait_on_page_bit_killable</code>（内核符号的逗号分隔列表）。除了在 <code translate="no" dir="ltr">ro.llk.stack.timeout_ms</code> 时间段内每 <code translate="no" dir="ltr">ro.llk_check_ms</code> 轮询一次外，该检查不会向前调度 ABA，因此，堆栈符号的出现频率应极低且非常短暂（符号持久出现在所有堆栈样本中的可能性微乎其微）。在堆栈扩展中检查 <code translate="no" dir="ltr">" symbol+0x"</code> 或 <code translate="no" dir="ltr">" symbol.cfi+0x"</code> 的匹配项。<strong>仅适用于 userdebug 或 eng build</strong>；在 user build 中，考虑安全问题会导致权限受限，无法进行此检查。</p>
+
+<h3 id="ro-llk-blacklist-process" data-text="ro.llk.blacklist.process" tabindex="0">ro.llk.blacklist.process</h3>
+
+<p><code translate="no" dir="ltr">llkd</code> 不监控指定的进程。默认值为 <code translate="no" dir="ltr">0,1,2</code>（<code translate="no" dir="ltr">kernel</code>、<code translate="no" dir="ltr">init</code> 和 <code translate="no" dir="ltr">[kthreadd]</code>）加上进程名称 <code translate="no" dir="ltr">init,[kthreadd],[khungtaskd],lmkd,llkd,watchdogd, [watchdogd],[watchdogd/0],...,[watchdogd/get_nprocs-1]</code>。进程可以是 <code translate="no" dir="ltr">comm</code>、<code translate="no" dir="ltr">cmdline</code> 或 <code translate="no" dir="ltr">pid</code> 引用。自动默认值可以大于当前最大属性大小（即 92 个字符）。</p>
+<aside class="note"><strong>注意</strong><span>：<code translate="no" dir="ltr">false</code> 是极不可能列入黑名单的进程。</span></aside><h3 id="ro-llk-blacklist-parent" data-text="ro.llk.blacklist.parent" tabindex="0">ro.llk.blacklist.parent</h3>
+
+<p><code translate="no" dir="ltr">llkd</code> 不监控具有指定父进程的进程。默认值为 <code translate="no" dir="ltr">0,2,adbd&amp;[setsid]</code>（<code translate="no" dir="ltr">kernel</code>、<code translate="no" dir="ltr">[kthreadd]</code> 和 <code translate="no" dir="ltr">adbd</code> 仅适用于僵尸进程 <code translate="no" dir="ltr">setsid</code>）。“逻辑与” (&amp;) 分隔符指定忽略父进程（仅在与目标子进程结合使用时）。之所以选择“逻辑与”符号，是因为进程名称绝不会使用该符号；不过，虽然通常指定 setprop 的 <code translate="no" dir="ltr">init rc</code> 文件没有这个问题，但 shell 中的 <code translate="no" dir="ltr">setprop</code> 需要对“逻辑与”符号进行转义或加引号。父进程或目标进程可以是 <code translate="no" dir="ltr">comm</code>、<code translate="no" dir="ltr">cmdline</code> 或 <code translate="no" dir="ltr">pid</code> 引用。</p>
+
+<h3 id="ro-llk-blacklist-uid" data-text="ro.llk.blacklist.uid" tabindex="0">ro.llk.blacklist.uid</h3>
+
+<p><code translate="no" dir="ltr">llkd</code> 不监控与指定 uid 匹配的进程。其为 uid 号或名称的逗号分隔列表。默认值为空或 false。</p>
+
+<h3 id="ro-llk-blacklist-process-stack" data-text="ro.llk.blacklist.process.stack" tabindex="0">ro.llk.blacklist.process.stack</h3>
+
+<p><code translate="no" dir="ltr">llkd</code> 不监控指定用于检查活锁堆栈签名的这部分进程。默认值为进程名称 <code translate="no" dir="ltr">init,lmkd.llkd,llkd,keystore,ueventd,apexd,logd</code>。防止发生与阻止 <code translate="no" dir="ltr">ptrace</code> 的进程（因为无法检查这些进程）相关联的 sepolicy 违规情况。<strong>仅在 userdebug 和 eng build 中有效</strong>。如需详细了解构建类型，请参阅<a href="https://source.android.google.cn/setup/build/building?hl=zh-cn#choose-a-target">构建 Android</a>。</p>
+
+<h2 id="architectural-concerns" data-text="架构问题" tabindex="0">架构问题</h2>
+
+<ul>
+<li>属性限定为 92 个字符（但是，对于源代码中的 <code translate="no" dir="ltr">include/llkd.h</code> 文件中定义的默认值，可忽略此限制）。</li>
+<li>内置 <code translate="no" dir="ltr">[khungtask]</code> 守护程序的通用性太高，并且驱动程序代码中处于 D 状态的 trip 过多。切换到 S 状态会使任务可终止（并可根据需要由驱动程序恢复）。</li>
+</ul>
+
+<h2 id="library-interface-optional" data-text="库接口（可选）" tabindex="0">库接口（可选）</h2>
+
+<p>您可以选择性使用 <code translate="no" dir="ltr">libllkd</code> 组件中的以下 C 接口将 <code translate="no" dir="ltr">llkd</code> 整合到另一个特权守护程序中：</p>
+<devsite-code><pre class="prettyprint" translate="no" dir="ltr" is-upgraded=""><code translate="no" dir="ltr">#include "llkd.h"
+bool llkInit(const char* threadname) /* return true if enabled */
+unsigned llkCheckMillseconds(void)   /* ms to sleep for next check */
+</code></pre></devsite-code>
+<p>如果提供了线程名称，线程就会自动生成，否则调用方必须在其主循环中调用 <code translate="no" dir="ltr">llkCheckMilliseconds</code>。该函数会返回到此处理程序的下一次预期调用所用的时间。</p>
+
+
+          </div>

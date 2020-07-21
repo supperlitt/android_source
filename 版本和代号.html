@@ -1,0 +1,167 @@
+<div class="devsite-table-wrapper"><table>
+<thead>
+<tr>
+<th>代号</th>
+<th>版本</th>
+<th>API 级别/NDK 版本</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Android10</td>
+<td>10</td>
+<td>API 级别 29</td>
+</tr>
+<tr>
+<td>Pie</td>
+<td>9</td>
+<td>API 级别 28</td>
+</tr>
+<tr>
+<td>Oreo</td>
+<td>8.1.0</td>
+<td>API 级别 27</td>
+</tr>
+<tr>
+<td>Oreo</td>
+<td>8.0.0</td>
+<td>API 级别 26</td>
+</tr>
+<tr>
+<td>Nougat</td>
+<td>7.1</td>
+<td>API 级别 25</td>
+</tr>
+<tr>
+<td>Nougat</td>
+<td>7.0</td>
+<td>API 级别 24</td>
+</tr>
+<tr>
+<td>Marshmallow</td>
+<td>6.0</td>
+<td>API 级别 23</td>
+</tr>
+<tr>
+<td>Lollipop</td>
+<td>5.1</td>
+<td>API 级别 22</td>
+</tr>
+<tr>
+<td>Lollipop</td>
+<td>5.0</td>
+<td>API 级别 21</td>
+</tr>
+<tr>
+<td>KitKat</td>
+<td>4.4 - 4.4.4</td>
+<td>API 级别 19</td>
+</tr>
+<tr>
+<td>Jelly Bean</td>
+<td>4.3.x</td>
+<td>API 级别 18</td>
+</tr>
+<tr>
+<td>Jelly Bean</td>
+<td>4.2.x</td>
+<td>API 级别 17</td>
+</tr>
+<tr>
+<td>Jelly Bean</td>
+<td>4.1.x</td>
+<td>API 级别 16</td>
+</tr>
+<tr>
+<td>Ice Cream Sandwich</td>
+<td>4.0.3 - 4.0.4</td>
+<td>API 级别 15，NDK 8</td>
+</tr>
+<tr>
+<td>Ice Cream Sandwich</td>
+<td>4.0.1 - 4.0.2</td>
+<td>API 级别 14，NDK 7</td>
+</tr>
+<tr>
+<td>Honeycomb</td>
+<td>3.2.x</td>
+<td>API 级别 13</td>
+</tr>
+<tr>
+<td>Honeycomb</td>
+<td>3.1</td>
+<td>API 级别 12，NDK 6</td>
+</tr>
+<tr>
+<td>Honeycomb</td>
+<td>3.0</td>
+<td>API 级别 11</td>
+</tr>
+<tr>
+<td>Gingerbread</td>
+<td>2.3.3 - 2.3.7</td>
+<td>API 级别 10</td>
+</tr>
+<tr>
+<td>Gingerbread</td>
+<td>2.3 - 2.3.2</td>
+<td>API 级别 9，NDK 5</td>
+</tr>
+<tr>
+<td>Froyo</td>
+<td>2.2.x</td>
+<td>API 级别 8，NDK 4</td>
+</tr>
+<tr>
+<td>Eclair</td>
+<td>2.1</td>
+<td>API 级别 7，NDK 3</td>
+</tr>
+<tr>
+<td>Eclair</td>
+<td>2.0.1</td>
+<td>API 级别 6</td>
+</tr>
+<tr>
+<td>Eclair</td>
+<td>2.0</td>
+<td>API 级别 5</td>
+</tr>
+<tr>
+<td>Donut</td>
+<td>1.6</td>
+<td>API 级别 4，NDK 2</td>
+</tr>
+<tr>
+<td>Cupcake</td>
+<td>1.5</td>
+<td>API 级别 3，NDK 1</td>
+</tr>
+<tr>
+<td>（无代号）</td>
+<td>1.1</td>
+<td>API 级别 2</td>
+</tr>
+<tr>
+<td>（无代号）</td>
+<td>1.0</td>
+<td>API 级别 1</td>
+</tr>
+</tbody>
+</table></div>
+<p>在 Android 8.0.0 (Oreo) 及更高版本中，每个 build 均采用 build ID 格式 <strong>PVBB.YYMMDD.bbb[.Cn]</strong> 进行标识，其中：</p>
+<ul>
+  <li><strong>P</strong> 表示平台版本代号的第一个字母，例如 <strong>O</strong> 表示 Oreo。</li>
+  <li><strong>V</strong> 表示支持的行业。按照惯例，<strong>P</strong> 表示主要平台分支。</li>
+  <li><strong>BB</strong> 是由字母和数字组成的代码，Google 可通过该代码识别 build 所属的确切代码分支。</li>
+  <li><strong>YYMMDD</strong> 表示相应版本从开发分支细分出来或与开发分支同步的日期。它并不一定是 build 的确切构建日期，因为 Google 常常会在现有 build 中增加细微的更改，并在新 build 中重复使用与现有 build 相同的日期代码。</li>
+  <li><strong>bbb</strong> 表示具有相同日期代码的不同版本，从 <strong>001</strong> 开始。</li>
+  <li><strong>Cn</strong> 是可选的字母数字，表示在现有 PVBB.YYMMDD.bbb build 之上构建的修补程序，从 <strong>A1</strong> 开始。</li>
+</ul>
+<p>早期 Android 版本采用另一种较短的 build ID 代码（例如 <strong>FRF85B</strong>），其中：</p>
+<ul>
+  <li>第一个字母代表版本系列的代号，例如 <strong>F</strong> 表示 Froyo。</li>
+  <li>第二个字母是分支代码，Google 用它来表示 build 所属的确切代码分支。按照惯例，<strong>R</strong> 表示主要版本分支。</li>
+  <li>第三个字母和后面的两个数字是日期代码。字母表示季度（<strong>A</strong> 表示 2009 年第 1 季度，<strong>F</strong> 表示 2010 年第 2 季度，以此类推）。两个数字表示相应季度内的第几天（<strong>F85</strong> 表示 2010 年 6 月 24 日）。日期代码并不一定是 build 的确切构建日期，因为 Google 常常会在现有 build 中增加细微的更改，并在新 build 中重复使用与现有 build 相同的日期代码。</li>
+  <li>末尾字母表示具有相同日期代码的不同版本，从 <strong>A</strong> 开始（A 并不会显示，通常会为了简洁而省略）。</li>
+</ul>
